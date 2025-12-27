@@ -15,9 +15,11 @@ export default function Navbar() {
 
   const navItems = [
     { label: "Home", href: "/" },
-    { label: "About", href: "/about" },
-    { label: "Services", href: "/services" },
-    { label: "Contact", href: "/contact" },
+    { label: "Form Renderer", href: "/form/renderer" },
+    { label: "Form Generator", href: "/form/generator" },
+    // { label: "About", href: "/about" },
+    // { label: "Services", href: "/services" },
+    // { label: "Contact", href: "/contact" },
   ];
 
   const isActive = (path: string) => {
