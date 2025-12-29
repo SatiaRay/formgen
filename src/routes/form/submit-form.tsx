@@ -1,21 +1,34 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { 
-  ArrowLeft, 
-  CheckCircle, 
-  Send, 
+import {
+  ArrowLeft,
+  CheckCircle,
+  Send,
   RefreshCw,
   AlertCircle,
-  PlusCircle
+  PlusCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { graphqlService } from "@/services/graphql.service";
@@ -26,12 +39,13 @@ interface FormField {
   label: string;
   required: boolean;
   placeholder?: string;
+  options?: string[]; // Added for select, radio, dropdown fields
 }
 
 export default function SubmitForm() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  
+
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -53,10 +67,10 @@ export default function SubmitForm() {
     const fetchForm = async () => {
       setLoading(true);
       setFormNotFound(false);
-      
+
       try {
         const form = await graphqlService.getFormById(id);
-        
+
         if (!form) {
           setFormNotFound(true);
           toast.error("Form not found");
@@ -65,45 +79,45 @@ export default function SubmitForm() {
 
         setFormTitle(form.title || "");
         setFormDescription(form.description || "");
-        
+
         let parsedFields: FormField[] = [];
-        
+
         try {
           // Parse the schema - it might be stored as a string
           let schema = form.schema;
-          if (typeof schema === 'string') {
+          if (typeof schema === "string") {
             schema = JSON.parse(schema);
           }
-          
-          if (schema && typeof schema === 'object' && 'fields' in schema) {
+
+          if (schema && typeof schema === "object" && "fields" in schema) {
             parsedFields = schema.fields || [];
           }
         } catch (parseError) {
           console.error("Error parsing schema:", parseError);
           toast.error("Error loading form structure");
         }
-        
+
         setFields(parsedFields);
-        
+
         // Initialize form data structure with default values
         const initialData: Record<string, any> = {};
         parsedFields.forEach((field: FormField) => {
           switch (field.type) {
-            case 'checkbox':
+            case "checkbox":
               initialData[field.id] = false;
               break;
-            case 'number':
-              initialData[field.id] = '';
+            case "number":
+              initialData[field.id] = "";
               break;
-            case 'select':
-              initialData[field.id] = '';
+            case "select":
+            case "radio":
+              initialData[field.id] = "";
               break;
             default:
-              initialData[field.id] = '';
+              initialData[field.id] = "";
           }
         });
         setFormData(initialData);
-        
       } catch (error: any) {
         console.error("Error fetching form:", error);
         toast.error(`Error loading form: ${error.message}`);
@@ -117,14 +131,14 @@ export default function SubmitForm() {
   }, [id]);
 
   const handleInputChange = (fieldId: string, value: any) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [fieldId]: value
+      [fieldId]: value,
     }));
-    
+
     // Clear error for this field if it exists
     if (errors[fieldId]) {
-      setErrors(prev => {
+      setErrors((prev) => {
         const newErrors = { ...prev };
         delete newErrors[fieldId];
         return newErrors;
@@ -134,44 +148,48 @@ export default function SubmitForm() {
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-    
+
     fields.forEach((field: FormField) => {
       const value = formData[field.id];
-      
+
       // Check required fields
       if (field.required) {
-        if (field.type === 'checkbox') {
+        if (field.type === "checkbox") {
           if (!value) {
             newErrors[field.id] = `${field.label} is required`;
           }
-        } else if (!value || value.toString().trim() === '') {
+        } else if (field.type === "select" || field.type === "radio") {
+          if (!value || value.toString().trim() === "") {
+            newErrors[field.id] = `Please select an option for ${field.label}`;
+          }
+        } else if (!value || value.toString().trim() === "") {
           newErrors[field.id] = `${field.label} is required`;
         }
       }
-      
+
       // Email validation
-      if (field.type === 'email' && value && value.trim() !== '') {
+      if (field.type === "email" && value && value.trim() !== "") {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(value)) {
-          newErrors[field.id] = 'Please enter a valid email address';
+          newErrors[field.id] = "Please enter a valid email address";
         }
       }
-      
+
       // Number validation
-      if (field.type === 'number' && value && value.trim() !== '') {
+      if (field.type === "number" && value && value.trim() !== "") {
         if (isNaN(Number(value))) {
-          newErrors[field.id] = 'Please enter a valid number';
+          newErrors[field.id] = "Please enter a valid number";
         }
       }
     });
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       toast.error("Please fix the errors in the form");
       return;
@@ -193,7 +211,6 @@ export default function SubmitForm() {
       } else {
         toast.error("Failed to submit form - no response received");
       }
-      
     } catch (error: any) {
       console.error("Submission error:", error);
       toast.error(`Failed to submit: ${error.message}`);
@@ -204,95 +221,189 @@ export default function SubmitForm() {
 
   const handleSubmitAnother = () => {
     setIsSubmitted(false);
-    
+
     // Reset form data to initial values
     const resetData: Record<string, any> = {};
     fields.forEach((field: FormField) => {
       switch (field.type) {
-        case 'checkbox':
+        case "checkbox":
           resetData[field.id] = false;
           break;
+        case "select":
+        case "radio":
+          resetData[field.id] = "";
+          break;
         default:
-          resetData[field.id] = '';
+          resetData[field.id] = "";
       }
     });
     setFormData(resetData);
     setErrors({});
-    
+
     // Scroll to top for better UX
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const renderField = (field: FormField) => {
     const fieldError = errors[field.id];
     const isRequired = field.required;
-    const fieldValue = formData[field.id] || '';
-    
+    const fieldValue = formData[field.id] || "";
+
     const baseProps = {
       id: field.id,
       required: isRequired,
-      placeholder: field.placeholder || '',
+      placeholder: field.placeholder || "",
       className: fieldError ? "border-red-500 focus-visible:ring-red-500" : "",
     };
 
     switch (field.type) {
-      case 'textarea':
+      case "textarea":
         return (
-          <Textarea 
+          <Textarea
             {...baseProps}
             value={fieldValue}
-            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => 
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
               handleInputChange(field.id, e.target.value)
             }
             rows={4}
           />
         );
-      
-      case 'select':
+
+      case "select":
+        // Ensure options is an array and not empty
+        const hasOptions = field.options && field.options.length > 0;
+
         return (
           <Select
             value={fieldValue}
             onValueChange={(value) => handleInputChange(field.id, value)}
+            disabled={!hasOptions}
           >
-            <SelectTrigger className={fieldError ? "border-red-500" : ""}>
-              <SelectValue placeholder={field.placeholder || "Select an option"} />
+            <SelectTrigger
+              className={`w-full ${fieldError ? "border-red-500" : ""}`}
+            >
+              <SelectValue
+                placeholder={
+                  hasOptions
+                    ? field.placeholder || "Select an option"
+                    : "No options available"
+                }
+              />
             </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="option1">Option 1</SelectItem>
-              <SelectItem value="option2">Option 2</SelectItem>
-              <SelectItem value="option3">Option 3</SelectItem>
-              <SelectItem value="option4">Option 4</SelectItem>
-              <SelectItem value="option5">Option 5</SelectItem>
-            </SelectContent>
+            {hasOptions && (
+              <SelectContent>
+                {field.options.map((option, index) => (
+                  <SelectItem key={index} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            )}
           </Select>
         );
-      
-      case 'checkbox':
+
+      case "radio":
+        return (
+          <RadioGroup
+            value={fieldValue}
+            onValueChange={(value) => handleInputChange(field.id, value)}
+            className={
+              fieldError
+                ? "space-y-2 border border-red-300 rounded-md p-4"
+                : "space-y-2"
+            }
+          >
+            {field.options?.map((option, index) => (
+              <div key={index} className="flex items-center space-x-2">
+                <RadioGroupItem
+                  value={option}
+                  id={`${field.id}-${index}`}
+                  className={fieldError ? "border-red-500" : ""}
+                />
+                <Label
+                  htmlFor={`${field.id}-${index}`}
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                >
+                  {option}
+                </Label>
+              </div>
+            ))}
+            {!field.options || field.options.length === 0 ? (
+              <p className="text-sm text-muted-foreground italic">
+                No options available
+              </p>
+            ) : null}
+          </RadioGroup>
+        );
+
+      case "checkbox":
         return (
           <div className="flex items-center space-x-2">
             <Checkbox
               id={field.id}
               checked={!!fieldValue}
-              onCheckedChange={(checked) => handleInputChange(field.id, checked)}
-              className={fieldError ? "border-red-500 data-[state=checked]:bg-red-500" : ""}
+              onCheckedChange={(checked) =>
+                handleInputChange(field.id, checked)
+              }
+              className={
+                fieldError
+                  ? "border-red-500 data-[state=checked]:bg-red-500"
+                  : ""
+              }
             />
             <Label
               htmlFor={field.id}
-              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
             >
               {field.placeholder || field.label}
               {isRequired && <span className="text-red-500 ml-1">*</span>}
             </Label>
           </div>
         );
-      
-      default:
+
+      case "date":
         return (
           <Input
-            type={field.type}
+            type="date"
             {...baseProps}
             value={fieldValue}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => 
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              handleInputChange(field.id, e.target.value)
+            }
+          />
+        );
+
+      case "number":
+        return (
+          <Input
+            type="number"
+            {...baseProps}
+            value={fieldValue}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              handleInputChange(field.id, e.target.value)
+            }
+          />
+        );
+
+      case "email":
+        return (
+          <Input
+            type="email"
+            {...baseProps}
+            value={fieldValue}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              handleInputChange(field.id, e.target.value)
+            }
+          />
+        );
+
+      default: // text and other types
+        return (
+          <Input
+            type="text"
+            {...baseProps}
+            value={fieldValue}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
               handleInputChange(field.id, e.target.value)
             }
           />
@@ -332,10 +443,7 @@ export default function SubmitForm() {
             <p className="text-muted-foreground mb-4">
               The form you're looking for doesn't exist or has been removed.
             </p>
-            <Button 
-              onClick={() => navigate("/form")} 
-              variant="outline"
-            >
+            <Button onClick={() => navigate("/form")} variant="outline">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Forms List
             </Button>
@@ -357,19 +465,20 @@ export default function SubmitForm() {
                   <CheckCircle className="h-16 w-16 text-green-600" />
                 </div>
               </div>
-              
+
               <h1 className="text-3xl font-bold mb-4 text-green-700">
                 Successfully Submitted!
               </h1>
-              
+
               <p className="text-lg text-muted-foreground mb-2">
-                Thank you for submitting <span className="font-semibold">{formTitle}</span>
+                Thank you for submitting{" "}
+                <span className="font-semibold">{formTitle}</span>
               </p>
-              
+
               <p className="text-muted-foreground mb-8">
                 Your response has been recorded successfully.
               </p>
-              
+
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button
                   onClick={handleSubmitAnother}
@@ -379,7 +488,7 @@ export default function SubmitForm() {
                   <PlusCircle className="w-5 h-5 mr-2" />
                   Submit Another Response
                 </Button>
-                
+
                 <Button
                   onClick={() => navigate("/form")}
                   variant="outline"
@@ -389,10 +498,11 @@ export default function SubmitForm() {
                   Back to Forms List
                 </Button>
               </div>
-              
+
               <div className="mt-8 pt-6 border-t">
                 <p className="text-sm text-muted-foreground">
-                  Need to make changes? Click "Submit Another Response" to fill out the form again.
+                  Need to make changes? Click "Submit Another Response" to fill
+                  out the form again.
                 </p>
               </div>
             </CardContent>
@@ -410,18 +520,18 @@ export default function SubmitForm() {
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back to Forms
               </Button>
-              
+
               <h1 className="text-3xl font-bold mb-2">{formTitle}</h1>
-              
+
               {formDescription && (
                 <p className="text-muted-foreground mb-4">{formDescription}</p>
               )}
-              
+
               <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
                 <div className="w-2 h-2 rounded-full bg-green-500"></div>
                 <span>Form is active and accepting responses</span>
               </div>
-              
+
               {fields.length === 0 && (
                 <Alert>
                   <AlertDescription>
@@ -440,40 +550,57 @@ export default function SubmitForm() {
                     Please provide the following information
                   </CardDescription>
                 </CardHeader>
-                
+
                 <form onSubmit={handleSubmit}>
                   <CardContent className="pt-6">
                     <div className="space-y-6">
                       {fields.map((field: FormField) => (
                         <div key={field.id} className="space-y-2">
-                          {field.type !== 'checkbox' && (
+                          {/* Don't show label for checkbox in the same way */}
+                          {field.type !== "checkbox" && (
                             <Label htmlFor={field.id}>
                               {field.label}
-                              {field.required && <span className="text-red-500 ml-1">*</span>}
+                              {field.required && (
+                                <span className="text-red-500 ml-1">*</span>
+                              )}
                             </Label>
                           )}
-                          
+
                           {renderField(field)}
-                          
+
                           {errors[field.id] && (
                             <p className="text-sm text-red-500 flex items-center gap-1">
                               <AlertCircle className="w-4 h-4" />
                               {errors[field.id]}
                             </p>
                           )}
-                          
-                          {field.type === 'email' && !errors[field.id] && (
+
+                          {field.type === "email" && !errors[field.id] && (
                             <p className="text-xs text-muted-foreground">
                               We'll never share your email with anyone else.
                             </p>
                           )}
+
+                          {/* For checkbox fields, show label above if it's different from placeholder */}
+                          {field.type === "checkbox" &&
+                            field.placeholder !== field.label && (
+                              <Label
+                                htmlFor={field.id}
+                                className="text-base font-medium block mb-1"
+                              >
+                                {field.label}
+                                {field.required && (
+                                  <span className="text-red-500 ml-1">*</span>
+                                )}
+                              </Label>
+                            )}
                         </div>
                       ))}
-                      
+
                       {/* Submit Button */}
                       <div className="pt-6 border-t">
-                        <Button 
-                          type="submit" 
+                        <Button
+                          type="submit"
                           className="w-full"
                           size="lg"
                           disabled={submitting}
@@ -490,14 +617,16 @@ export default function SubmitForm() {
                             </>
                           )}
                         </Button>
-                        
+
                         <div className="mt-3 text-center">
                           <p className="text-xs text-muted-foreground">
-                            {fields.filter(f => f.required).length > 0 ? (
+                            {fields.filter((f) => f.required).length > 0 ? (
                               <>
-                                <span className="text-red-500">*</span> Required fields
+                                <span className="text-red-500">*</span> Required
+                                fields
                                 {" • "}
-                                {fields.filter(f => f.required).length} required field(s)
+                                {fields.filter((f) => f.required).length}{" "}
+                                required field(s)
                               </>
                             ) : (
                               "All fields are optional"
@@ -517,10 +646,7 @@ export default function SubmitForm() {
                   <p className="text-muted-foreground mb-4">
                     This form doesn't have any fields to submit.
                   </p>
-                  <Button
-                    onClick={() => navigate("/form")}
-                    variant="outline"
-                  >
+                  <Button onClick={() => navigate("/form")} variant="outline">
                     <ArrowLeft className="w-4 h-4 mr-2" />
                     Back to Forms List
                   </Button>
@@ -531,7 +657,8 @@ export default function SubmitForm() {
             {/* Form Info Footer */}
             <div className="mt-8 text-center">
               <p className="text-sm text-muted-foreground">
-                This form is powered by FormBuilder • Your responses are secure and private
+                This form is powered by FormBuilder • Your responses are secure
+                and private
               </p>
             </div>
           </>

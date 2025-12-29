@@ -23,24 +23,10 @@ export default function FormGenerator() {
       {
         id: "field_001",
         type: "text",
-        label: "Your Full Name",
-        required: false,
-        placeholder: "John Doe"
-      },
-      {
-        id: "field_002",
-        type: "email",
-        label: "Email Address",
+        label: "Name",
         required: true,
-        placeholder: "you@example.com"
+        placeholder: "Enter name ..."
       },
-      {
-        id: "field_003",
-        type: "number",
-        label: "Rate us 1-10",
-        required: true,
-        placeholder: "Enter a number between 1 and 10"
-      }
     ]
   });
 
@@ -111,6 +97,17 @@ export default function FormGenerator() {
       return;
     }
 
+    // Validate that select/radio fields have options
+    const invalidFields = form.fields.filter(field => 
+      (field.type === 'select' || field.type === 'radio') && 
+      (!field.options || field.options.length === 0)
+    );
+
+    if (invalidFields.length > 0) {
+      toast.error(`Please add options to ${invalidFields.length} ${invalidFields.length === 1 ? 'field' : 'fields'}: ${invalidFields.map(f => f.label).join(', ')}`);
+      return;
+    }
+
     setSaving(true);
     try {
       // Prepare the form data for Supabase
@@ -144,6 +141,71 @@ export default function FormGenerator() {
       toast.error(`Failed to save form: ${error.message}`);
     } finally {
       setSaving(false);
+    }
+  };
+
+  // Render preview input based on field type
+  const renderPreviewInput = (field: FormField) => {
+    switch (field.type) {
+      case "textarea":
+        return <Textarea placeholder={field.placeholder} disabled />;
+      
+      case "select":
+        return (
+          <Select disabled>
+            <SelectTrigger>
+              <SelectValue placeholder={field.placeholder || "Select an option"} />
+            </SelectTrigger>
+            <SelectContent>
+              {field.options?.map((option, index) => (
+                <SelectItem key={index} value={option}>
+                  {option}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        );
+      
+      case "radio":
+        return (
+          <div className="space-y-2">
+            {field.options?.map((option, index) => (
+              <div key={index} className="flex items-center space-x-2">
+                <input 
+                  type="radio" 
+                  id={`preview-${field.id}-${index}`} 
+                  name={`preview-${field.id}`}
+                  disabled
+                  className="h-4 w-4"
+                />
+                <Label htmlFor={`preview-${field.id}-${index}`} className="font-normal">
+                  {option}
+                </Label>
+              </div>
+            ))}
+          </div>
+        );
+      
+      case "checkbox":
+        return (
+          <div className="flex items-center space-x-2">
+            <input 
+              type="checkbox" 
+              id={`preview-${field.id}`}
+              disabled
+              className="h-4 w-4"
+            />
+            <Label htmlFor={`preview-${field.id}`} className="font-normal">
+              {field.placeholder || "Check this box"}
+            </Label>
+          </div>
+        );
+      
+      case "date":
+        return <Input type="date" placeholder={field.placeholder} disabled />;
+      
+      default:
+        return <Input type={field.type} placeholder={field.placeholder} disabled />;
     }
   };
 
@@ -310,26 +372,7 @@ export default function FormGenerator() {
                           {field.label}
                           {field.required && <span className="text-red-500 ml-1">*</span>}
                         </Label>
-                        {field.type === "textarea" ? (
-                          <Textarea
-                            id={`preview-${field.id}`}
-                            placeholder={field.placeholder}
-                            disabled
-                          />
-                        ) : field.type === "select" ? (
-                          <Select disabled>
-                            <SelectTrigger>
-                              <SelectValue placeholder={field.placeholder || "Select an option"} />
-                            </SelectTrigger>
-                          </Select>
-                        ) : (
-                          <Input
-                            id={`preview-${field.id}`}
-                            type={field.type}
-                            placeholder={field.placeholder}
-                            disabled
-                          />
-                        )}
+                        {renderPreviewInput(field)}
                       </div>
                     ))
                   )}
