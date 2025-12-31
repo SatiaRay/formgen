@@ -217,7 +217,7 @@ export default function FormList() {
               return (
                 <Card
                   key={form.id}
-                  className="hover:shadow-lg transition-shadow flex flex-col h-full"
+                  className="hover:shadow-lg transition-shadow flex flex-col h-full gap-0"
                 >
                   <CardHeader className="pb-3">
                     <div className="flex justify-between items-start">
@@ -272,15 +272,6 @@ export default function FormList() {
                   <CardFooter className="border-t pt-4 mt-auto">
                     <div className="flex justify-between w-full">
                       <div className="flex gap-1">
-                        <Link to={`/form/submit/${form.id}`}>
-                          <Button className="cursor-pointer" size="sm">
-                            <LayersPlus className="w-4 h-4 mr-1" />
-                            <span className="md:hidden xl:inline">
-                              Data Entry
-                            </span>
-                          </Button>
-                        </Link>
-
                         <Link to={`/form/${form.id}/responses`}>
                           <Button className="cursor-pointer" size="sm">
                             <Database className="w-4 h-4 mr-1" />
