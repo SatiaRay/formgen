@@ -692,12 +692,12 @@ export default function SubmitForm() {
                 </Button>
 
                 <Button
-                  onClick={() => navigate("/form")}
+                  onClick={() => navigate(`/form/${id}/responses`)}
                   variant="outline"
                   size="lg"
                 >
                   <ArrowLeft className="w-5 h-5 mr-2" />
-                  بازگشت به لیست فرم‌ها
+                  بازگشت به فهرست پاسخ ها
                 </Button>
               </div>
 
@@ -847,9 +847,9 @@ export default function SubmitForm() {
                   <p className="text-muted-foreground mb-4">
                     این فرم هیچ فیلدی برای ارسال ندارد.
                   </p>
-                  <Button onClick={() => navigate("/form")} variant="outline">
+                  <Button onClick={() => navigate(`/form/${id}/responses`)} variant="outline">
                     <ArrowLeft className="w-4 h-4 mr-2" />
-                    بازگشت به لیست فرم‌ها
+                    بازگشت به فهرست پاسخ ها
                   </Button>
                 </CardContent>
               </Card>
@@ -858,7 +858,7 @@ export default function SubmitForm() {
             {/* Form Info Footer */}
             <div className="mt-8 text-center">
               <p className="text-sm text-muted-foreground">
-                این فرم توسط ساتیا فرم پشتیبانی می‌شود • پاسخ‌های شما امن و خصوصی هستند
+                این فرم توسط FormBuilder پشتیبانی می‌شود • پاسخ‌های شما امن و خصوصی هستند
               </p>
             </div>
           </>

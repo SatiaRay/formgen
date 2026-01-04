@@ -576,9 +576,9 @@ export default function ShowResponse() {
                 ? "این فرم وجود ندارد یا حذف شده است."
                 : "این پاسخ وجود ندارد یا حذف شده است."}
             </p>
-            <Button onClick={() => navigate("/form")} variant="outline">
+            <Button onClick={() => navigate(`/form/${formId}/responses`)} variant="outline">
               <ArrowLeft className="w-4 h-4 mr-2" />
-              بازگشت به لیست فرم‌ها
+              بازگشت به فهرست پاسخ ها
             </Button>
           </CardContent>
         </Card>
