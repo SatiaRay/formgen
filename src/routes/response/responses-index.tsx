@@ -108,10 +108,12 @@ export default function ResponsesIndex() {
 
   // Delete state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [responseToDelete, setResponseToDelete] = useState<FormResponse | null>(null);
+  const [responseToDelete, setResponseToDelete] = useState<FormResponse | null>(
+    null
+  );
 
   useEffect(() => {
-    setDeleteDialogOpen(responseToDelete !== null)
+    setDeleteDialogOpen(responseToDelete !== null);
   }, [responseToDelete]);
 
   // Fetch related form data for relation fields
@@ -205,7 +207,8 @@ export default function ResponsesIndex() {
 
     if (field.relationConfig?.formId) {
       const formData = relatedFormData[field.relationConfig.formId];
-      if (!formData) return `در حال بارگذاری... (فرم: ${field.relationConfig.formId})`;
+      if (!formData)
+        return `در حال بارگذاری... (فرم: ${field.relationConfig.formId})`;
 
       // The value should be a response ID from the related form
       const responseData = formData[value];
@@ -438,13 +441,36 @@ export default function ResponsesIndex() {
               <SelectValue placeholder="همه" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">همه</SelectItem>
+              <SelectItem value="__all__">همه</SelectItem>{" "}
+              {/* Changed from "" to "__all__" */}
               <SelectItem value="true">بله</SelectItem>
               <SelectItem value="false">خیر</SelectItem>
             </SelectContent>
           </Select>
         );
 
+      case "select":
+      case "radio":
+      case "dropdown":
+        return (
+          <Select
+            value={filter.value || ""}
+            onValueChange={(value) => handleFilterChange(field.id, value)}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="همه" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__all__">همه</SelectItem>{" "}
+              {/* Changed from "__all__" placeholder */}
+              {field.options?.map((option) => (
+                <SelectItem key={option} value={option}>
+                  {option}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        );
       case "select":
       case "radio":
       case "dropdown":
@@ -476,7 +502,9 @@ export default function ResponsesIndex() {
           >
             <SelectTrigger className="w-full">
               <SelectValue
-                placeholder={loadingRelations[field.id] ? "در حال بارگذاری..." : "همه"}
+                placeholder={
+                  loadingRelations[field.id] ? "در حال بارگذاری..." : "همه"
+                }
               />
             </SelectTrigger>
             <SelectContent>
@@ -989,9 +1017,7 @@ export default function ResponsesIndex() {
             {responses.length === 0 ? (
               <div className="text-center py-12">
                 <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">
-                  پاسخی یافت نشد
-                </h3>
+                <h3 className="text-lg font-semibold mb-2">پاسخی یافت نشد</h3>
                 <p className="text-muted-foreground mb-4">
                   {loading
                     ? "در حال بارگذاری پاسخ‌ها..."
