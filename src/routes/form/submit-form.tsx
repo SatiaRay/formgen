@@ -782,19 +782,6 @@ export default function SubmitForm() {
                             </p>
                           )}
 
-                          {/* For checkbox fields, show label above if it's different from placeholder */}
-                          {field.type === "checkbox" &&
-                            field.placeholder !== field.label && (
-                              <Label
-                                htmlFor={field.id}
-                                className="text-base font-medium block mb-1"
-                              >
-                                {field.label}
-                                {field.required && (
-                                  <span className="text-red-500 ml-1">*</span>
-                                )}
-                              </Label>
-                            )}
                         </div>
                       ))}
 
